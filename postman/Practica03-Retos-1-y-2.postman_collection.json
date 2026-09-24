@@ -1,0 +1,120 @@
+{
+  "info": {
+    "name": "Práctica 03 - Retos 1 y 2",
+    "description": "Demostración del patrón Repository, validación DTO con Zod, Response Wrapper y middleware global de errores.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:3000" },
+    { "key": "employeeId", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "00 - Health check",
+      "request": { "method": "GET", "url": "{{baseUrl}}/health" },
+      "event": [{ "listen": "test", "script": { "exec": [
+        "pm.test('Estado 200', () => pm.response.to.have.status(200));",
+        "pm.test('Usa Response Wrapper', () => { const json = pm.response.json(); pm.expect(json).to.have.keys('success', 'message', 'data'); });"
+      ] } }]
+    },
+    {
+      "name": "RETO 1 - Repository y CRUD",
+      "item": [
+        {
+          "name": "01 - Crear empleado",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"nombre\": \"Andrea Mendoza\",\n  \"cargo\": \"Arquitecta de Software\",\n  \"departamento\": \"Innovación\",\n  \"sueldo\": 4500\n}" },
+            "url": "{{baseUrl}}/api/v1/employees"
+          },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Empleado creado: 201', () => pm.response.to.have.status(201));",
+            "const json = pm.response.json();",
+            "pm.test('Respuesta exitosa universal', () => { pm.expect(json.success).to.eql(true); pm.expect(json.message).to.eql('Empleado creado'); pm.expect(json.data.id).to.be.a('string'); });",
+            "pm.collectionVariables.set('employeeId', json.data.id);"
+          ] } }]
+        },
+        {
+          "name": "02 - Listar empleados (paginado)",
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/v1/employees?page=1&limit=20" },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Estado 200', () => pm.response.to.have.status(200));",
+            "pm.test('Incluye metadatos de paginación', () => { const data = pm.response.json().data; pm.expect(data.items).to.be.an('array'); pm.expect(data).to.include.keys('total', 'page', 'limit', 'pages'); });"
+          ] } }]
+        },
+        {
+          "name": "03 - Consultar empleado por ID",
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/v1/employees/{{employeeId}}" },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Estado 200', () => pm.response.to.have.status(200));",
+            "pm.test('Devuelve el empleado creado', () => pm.expect(pm.response.json().data.id).to.eql(pm.collectionVariables.get('employeeId')));"
+          ] } }]
+        },
+        {
+          "name": "04 - Actualización parcial",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"sueldo\": 4800\n}" },
+            "url": "{{baseUrl}}/api/v1/employees/{{employeeId}}"
+          },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Estado 200', () => pm.response.to.have.status(200));",
+            "pm.test('Actualiza mediante Repository', () => pm.expect(pm.response.json().data.sueldo).to.eql(4800));"
+          ] } }]
+        }
+      ]
+    },
+    {
+      "name": "RETO 2 - Zod, Wrapper y errores",
+      "item": [
+        {
+          "name": "05 - Body inválido (Zod)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"nombre\": \"An\",\n  \"cargo\": \"Developer\",\n  \"departamento\": \"TI\",\n  \"sueldo\": -200\n}" },
+            "url": "{{baseUrl}}/api/v1/employees"
+          },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Rechaza con 400', () => pm.response.to.have.status(400));",
+            "pm.test('Wrapper uniforme y errores por campo', () => { const json = pm.response.json(); pm.expect(json.success).to.eql(false); pm.expect(json.data).to.eql(null); pm.expect(json.errors.fieldErrors).to.include.keys('nombre', 'departamento', 'sueldo'); });"
+          ] } }]
+        },
+        {
+          "name": "06 - ID inválido (req.params)",
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/v1/employees/123" },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Rechaza parámetro con 400', () => pm.response.to.have.status(400));",
+            "pm.test('No expone excepción interna', () => { const json = pm.response.json(); pm.expect(json.success).to.eql(false); pm.expect(json.message).to.eql('Solicitud inválida'); });"
+          ] } }]
+        },
+        {
+          "name": "07 - ID válido inexistente",
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/v1/employees/000000000000000000000000" },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Recurso inexistente: 404', () => pm.response.to.have.status(404));",
+            "pm.test('Error usa el mismo Wrapper', () => { const json = pm.response.json(); pm.expect(json).to.include({ success: false, message: 'Empleado no encontrado', data: null }); });"
+          ] } }]
+        },
+        {
+          "name": "08 - Ruta inexistente",
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/v1/no-existe" },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Ruta inexistente: 404', () => pm.response.to.have.status(404));",
+            "pm.test('Middleware global responde', () => pm.expect(pm.response.json().message).to.eql('Ruta no encontrada'));"
+          ] } }]
+        }
+      ]
+    },
+    {
+      "name": "09 - Limpieza: eliminar empleado",
+      "request": { "method": "DELETE", "url": "{{baseUrl}}/api/v1/employees/{{employeeId}}" },
+      "event": [{ "listen": "test", "script": { "exec": [
+        "pm.test('Eliminado correctamente', () => pm.response.to.have.status(200));",
+        "pm.test('Confirma el ID eliminado', () => pm.expect(pm.response.json().data.id).to.eql(pm.collectionVariables.get('employeeId')));"
+      ] } }]
+    }
+  ]
+}

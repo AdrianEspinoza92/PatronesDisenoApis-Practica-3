@@ -1,0 +1,43 @@
+@baseUrl = http://localhost:3000/api/v1/employees
+
+### Estado de la API
+GET http://localhost:3000/health
+
+### Listar empleados
+GET {{baseUrl}}?page=1&limit=20
+
+### Crear empleado válido
+POST {{baseUrl}}
+Content-Type: application/json
+
+{
+  "nombre": "Andrés Mendoza",
+  "cargo": "Arquitecto de Software",
+  "departamento": "Innovación",
+  "sueldo": 4500
+}
+
+### Probar validación Zod (debe responder 400)
+POST {{baseUrl}}
+Content-Type: application/json
+
+{
+  "nombre": "An",
+  "cargo": "Developer",
+  "departamento": "TI",
+  "sueldo": -200
+}
+
+### Consultar por ID (reemplace el valor)
+GET {{baseUrl}}/REEMPLAZAR_CON_ID
+
+### Actualización parcial (reemplace el valor)
+PATCH {{baseUrl}}/REEMPLAZAR_CON_ID
+Content-Type: application/json
+
+{
+  "sueldo": 4800
+}
+
+### Eliminar (reemplace el valor)
+DELETE {{baseUrl}}/REEMPLAZAR_CON_ID
