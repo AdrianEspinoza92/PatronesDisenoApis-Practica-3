@@ -4,6 +4,8 @@ Sistema CRUD de empleados desarrollado con MongoDB, Express, Angular, Node.js y 
 
 **Autor:** Carlos Adrian Espinoza Alvarez
 
+**Repositorio:** [github.com/AdrianEspinoza92/PatronesDisenoApis-Practica-3](https://github.com/AdrianEspinoza92/PatronesDisenoApis-Practica-3)
+
 La implementación resuelve los cuatro retos de la práctica: Repository, DTO con Zod, Response Wrapper, manejo global de errores, estado reactivo e inmutable, y componentes Smart/Dumb.
 
 ## Arquitectura
